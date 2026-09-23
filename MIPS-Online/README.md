@@ -1,3 +1,31 @@
+# MIPS Online Exam Solutions (CSE 210)
+
+This directory contains MIPS assembly solutions, analysis, and C-to-MIPS translation references for the **CSE 210 Computer Architecture Sessional MIPS Online Evaluation** at BUET.
+
+---
+
+## 📑 Contents
+
+- [Overview & Exam Context](#overview--exam-context)
+- [Section B — `splitScore`](#section-b--splitscore)
+- [Section C — `arrayScore`](#section-c--arrayscore)
+- [Section A — `arrayScore`](#section-a--arrayscore)
+- [Quick Mapping Reference](#quick-mapping-you-should-memorize-for-the-quiz)
+- [Key Exam Takeaways & Stack Conventions](#key-exam-takeaways--stack-conventions)
+- [File Manifest](#file-manifest)
+
+---
+
+## 🔍 Overview & Exam Context
+
+The MIPS online evaluation tests students' proficiency in translating recursive C procedures into standard 32-bit MIPS assembly. Key evaluated concepts include:
+1. **Stack Frame Management:** Allocating stack space with `$sp`, preserving `$ra`, saving argument registers (`$a0-$a3`), and saving local variables across recursive calls.
+2. **Base Condition & Branching:** Accurate translation of conditional statements and termination logic.
+3. **Array Indexing & Pointer Arithmetic:** Byte-addressable word alignment using `sll $reg, $index, 2` followed by adding base address.
+4. **Return Value Conventions:** Passing results via `$v0` and cleaning up stack frames before `jr $ra`.
+
+---
+
 ## Section B — `splitScore`
 
 C function:
@@ -137,7 +165,7 @@ split_exit:
 
 ---
 
-# Section C — `arrayScore`
+## Section C — `arrayScore`
 
 The paper gives:
 
@@ -158,7 +186,7 @@ int arrayScore(int A[], int low, int high){
 }
 ```
 
-### MIPS
+### MIPS Translation
 
 ```asm
 # ------------------------------------------------
@@ -302,22 +330,18 @@ array_exit:
     jr   $ra
 ```
 
-### ⚠️ Important issue with Section C
-
-As written in the PDF:
-
-```c
-left  = arrayScore(A, low-1, high);
-right = arrayScore(A, low, high+1);
-```
-
-these recursive calls move **away from the base condition** `low > high`. So for normal inputs, this does not terminate. The PDF may contain an error/formatting corruption here.
-
-Don't memorize the recursive logic of C until you confirm the original question.
+> [!WARNING]
+> **Issue in Section C Problem Statement:**
+> As written in the original question PDF:
+> ```c
+> left  = arrayScore(A, low-1, high);
+> right = arrayScore(A, low, high+1);
+> ```
+> Notice these recursive calls move **away** from the base termination condition `low > high`, causing non-termination or infinite stack consumption on normal inputs. This reflects a typo in the original question paper; the translation faithfully represents the written logic.
 
 ---
 
-# Section A — `arrayScore`
+## Section A — `arrayScore`
 
 The paper gives this structure:
 
@@ -350,7 +374,7 @@ int arrayScore(int A[], int low, int high, int factor){
 }
 ```
 
-### MIPS
+### MIPS Translation
 
 ```asm
 # ------------------------------------------------
@@ -522,22 +546,40 @@ A_exit:
     jr   $ra
 ```
 
-## Quick mapping you should memorize for the quiz
+---
 
-| C             | MIPS                     |
-| ------------- | ------------------------ |
-| `A[i]`        | `lw $tX, 0($base + i*4)` |
-| `A[i] = x`    | `sw $tX, 0($base + i*4)` |
-| `i++`         | `addi $i, $i, 1`         |
-| `i--`         | `addi $i, $i, -1`        |
-| `i * 4`       | `sll $t, $i, 2`          |
-| `i / 2`       | `sra $t, $i, 1`          |
-| `i > j`       | `slt $t, $j, $i`         |
-| `i < j`       | `slt $t, $i, $j`         |
-| `i == j`      | `beq $i, $j, label`      |
-| `i != j`      | `bne $i, $j, label`      |
-| `return x`    | `move $v0, $x`           |
-| function call | `jal function`           |
-| return        | `jr $ra`                 |
+## Quick Mapping You Should Memorize for the Quiz
 
-**One important exam point:** because A and B are recursive, you **must save `$ra` and the arguments on the stack** before making another `jal`. Otherwise the recursive calls overwrite the return address.
+| C Operation | MIPS Assembly |
+| :--- | :--- |
+| `A[i]` (load) | `sll $t0, $i, 2`<br>`add $t0, $base, $t0`<br>`lw $tX, 0($t0)` |
+| `A[i] = x` (store) | `sll $t0, $i, 2`<br>`add $t0, $base, $t0`<br>`sw $tX, 0($t0)` |
+| `i++` | `addi $i, $i, 1` |
+| `i--` | `addi $i, $i, -1` |
+| `i * 4` | `sll $t, $i, 2` |
+| `i / 2` | `sra $t, $i, 1` |
+| `i > j` | `slt $t, $j, $i` |
+| `i < j` | `slt $t, $i, $j` |
+| `i == j` | `beq $i, $j, label` |
+| `i != j` | `bne $i, $j, label` |
+| `return x` | `move $v0, $x` |
+| function call | `jal function` |
+| return to caller | `jr $ra` |
+
+---
+
+## Key Exam Takeaways & Stack Conventions
+
+> [!IMPORTANT]
+> **Preserving Registers Across Calls:**
+> Because all sections are recursive:
+> 1. You **must save `$ra`** on the stack before issuing any `jal`. Without this, subsequent recursive calls overwrite your return address.
+> 2. You **must save and reload argument registers (`$a0-$a3`)** if their values are reused after the child recursive call completes.
+> 3. Always maintain 4-byte (word) stack alignment (stack pointer decrements should be multiples of 4 or 8, e.g., `-24`, `-32`).
+
+---
+
+## 📂 File Manifest
+
+- [`MIPS_Online.pdf`](./MIPS_Online.pdf): Official problem question sheet for the MIPS online exam.
+- [`README.md`](./README.md): Detailed write-up, C function breakdowns, and MIPS translations.
